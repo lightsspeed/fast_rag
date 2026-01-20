@@ -1,0 +1,392 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
+import type { ChatMessage, ChatConversation, SourceCitation } from '@/types/chat';
+import { api, type Message as ApiMessage } from '@/services/api';
+
+export function useChat() {
+  const [conversations, setConversations] = useState<ChatConversation[]>(() => {
+    try {
+      const saved = localStorage.getItem('chat_conversations');
+      if (saved) {
+        return JSON.parse(saved, (key, value) => {
+          if (key === 'createdAt' || key === 'updatedAt' || key === 'timestamp') {
+            return new Date(value);
+          }
+          return value;
+        });
+      }
+    } catch (e) {
+      console.error('Failed to parse conversations from localStorage', e);
+    }
+    return [{
+      id: '1',
+      title: 'New conversation',
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }];
+  });
+
+  const [activeConversationId, setActiveConversationId] = useState(() => {
+    return localStorage.getItem('chat_active_id') || '1';
+  });
+
+  // Persist conversations
+  useEffect(() => {
+    localStorage.setItem('chat_conversations', JSON.stringify(conversations));
+  }, [conversations]);
+
+  // Persist active ID
+  useEffect(() => {
+    localStorage.setItem('chat_active_id', activeConversationId);
+  }, [activeConversationId]);
+  const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const activeConversation = conversations.find((c) => c.id === activeConversationId);
+  const messages = activeConversation?.messages || [];
+
+  const sendMessage = useCallback(async (content: string, images?: string[], skipAddUser?: boolean) => {
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content,
+      timestamp: new Date(),
+      images,
+    };
+
+    if (!skipAddUser) {
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === activeConversationId) {
+            const isFirstMessage = conv.messages.length === 0;
+            return {
+              ...conv,
+              messages: [...conv.messages, userMessage],
+              title: isFirstMessage ? 'Generating title...' : conv.title,
+              updatedAt: new Date(),
+            };
+          }
+          return conv;
+        })
+      );
+    }
+
+    setIsLoading(true);
+
+    // Create assistant message placeholder
+    const assistantMessageId = `assistant-${Date.now()}`;
+    let assistantContent = '';
+    let assistantSources: SourceCitation[] = [];
+
+    const assistantMessage: ChatMessage = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      sources: [],
+    };
+
+    // Add empty assistant message
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === activeConversationId
+          ? {
+            ...conv,
+            messages: [...conv.messages, assistantMessage],
+            updatedAt: new Date(),
+          }
+          : conv
+      )
+    );
+
+    // Prepare chat history for API
+    const chatHistory: ApiMessage[] = [];
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (conv) {
+      // Get all messages except the one we just added
+      const historyMessages = conv.messages.slice(0, -1);
+      for (const msg of historyMessages) {
+        chatHistory.push({
+          role: msg.role,
+          content: msg.content,
+        });
+      }
+    }
+
+    // Create abort controller for this request (not really used for WS, but good for cleanup)
+    abortControllerRef.current = new AbortController();
+
+    try {
+      await api.streamQuery(
+        content,
+        activeConversationId,
+        // onMetadata
+        (metadata) => {
+          // Convert backend sources to frontend format
+          const sources: SourceCitation[] = metadata.sources.map((source, idx) => ({
+            id: source.chunk_id || `source-${idx}`,
+            documentName: source.metadata?.filename || 'Unknown Document',
+            excerpt: source.content || '',
+            confidence: 0.9, // Default confidence
+          }));
+          assistantSources = sources;
+
+          // Update message with sources
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === activeConversationId
+                ? {
+                  ...conv,
+                  messages: conv.messages.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, sources }
+                      : msg
+                  ),
+                }
+                : conv
+            )
+          );
+        },
+        // onContent
+        (text) => {
+          assistantContent += text;
+
+          // Update message content and title in real-time
+          setConversations((prev) =>
+            prev.map((conv) => {
+              if (conv.id !== activeConversationId) return conv;
+
+              let updatedTitle = conv.title;
+
+              // Only parse title during the first message exchange
+              const isFirstExchange = conv.messages.length <= 2 || conv.title === 'Generating title...' || conv.title === 'New Chat' || conv.title === 'New conversation';
+
+              if (isFirstExchange) {
+                // Flexible regex to capture the growing title from the first line
+                const titleMatch = assistantContent.match(/^[\s\n]*(?:\*\*)?(?:Title:\s*)?([^*#\n]{2,40})/i);
+                if (titleMatch && titleMatch[1]) {
+                  const candidate = titleMatch[1].trim();
+                  if (candidate) {
+                    updatedTitle = candidate;
+                  }
+                }
+              }
+
+              return {
+                ...conv,
+                title: updatedTitle,
+                messages: conv.messages.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, content: assistantContent }
+                    : msg
+                ),
+                updatedAt: new Date(),
+              };
+            })
+          );
+        },
+        // onComplete
+        () => {
+          setIsLoading(false);
+          abortControllerRef.current = null;
+        },
+        // onError
+        (error) => {
+          console.error('WebSocket error:', error);
+
+          // Update message with error
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === activeConversationId
+                ? {
+                  ...conv,
+                  messages: conv.messages.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? {
+                        ...msg,
+                        content: `Error: ${error.message}. Please make sure the backend server is running on port 8000.`
+                      }
+                      : msg
+                  ),
+                }
+                : conv
+            )
+          );
+
+          setIsLoading(false);
+          abortControllerRef.current = null;
+        }
+      );
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  }, [activeConversationId, conversations]);
+
+  const createNewConversation = useCallback(() => {
+    const newConv: ChatConversation = {
+      id: Date.now().toString(),
+      title: 'New conversation',
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isPinned: false,
+    };
+    setConversations((prev) => [newConv, ...prev]);
+    setActiveConversationId(newConv.id);
+  }, []);
+
+  const deleteConversation = useCallback((id: string) => {
+    setConversations((prev) => {
+      const filtered = prev.filter((c) => c.id !== id);
+      // If we deleted the active conversation, switch to another one
+      if (id === activeConversationId && filtered.length > 0) {
+        setActiveConversationId(filtered[0].id);
+      } else if (filtered.length === 0) {
+        // Create a new conversation if all are deleted
+        const newConv: ChatConversation = {
+          id: Date.now().toString(),
+          title: 'New conversation',
+          messages: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPinned: false,
+        };
+        setActiveConversationId(newConv.id);
+        return [newConv];
+      }
+      return filtered;
+    });
+  }, [activeConversationId]);
+
+  const renameConversation = useCallback((id: string, newTitle: string) => {
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === id
+          ? { ...conv, title: newTitle, updatedAt: new Date() }
+          : conv
+      )
+    );
+  }, []);
+
+  const togglePinConversation = useCallback((id: string) => {
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === id
+          ? { ...conv, isPinned: !conv.isPinned, updatedAt: new Date() }
+          : conv
+      )
+    );
+  }, []);
+
+  const searchMessages = useCallback((query: string) => {
+    if (!query.trim()) return [];
+
+    const results: { conversation: ChatConversation; message: ChatMessage }[] = [];
+
+    conversations.forEach((conv) => {
+      conv.messages.forEach((msg) => {
+        if (msg.content.toLowerCase().includes(query.toLowerCase())) {
+          results.push({ conversation: conv, message: msg });
+        }
+      });
+    });
+
+    return results;
+  }, [conversations]);
+
+  const clearMessages = useCallback(() => {
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === activeConversationId
+          ? { ...conv, messages: [], updatedAt: new Date() }
+          : conv
+      )
+    );
+  }, [activeConversationId]);
+
+  const updateMessageFeedback = useCallback((messageId: string, feedback: 'up' | 'down' | null) => {
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === activeConversationId
+          ? {
+            ...conv,
+            messages: conv.messages.map((msg) =>
+              msg.id === messageId ? { ...msg, feedback } : msg
+            ),
+            updatedAt: new Date(),
+          }
+          : conv
+      )
+    );
+  }, [activeConversationId]);
+
+  const editMessage = useCallback(async (messageId: string, newContent: string, images?: string[]) => {
+    // Find the message index
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!conv) return;
+
+    const messageIndex = conv.messages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Remove all messages from the edited one onwards
+    const updatedMessages = conv.messages.slice(0, messageIndex);
+
+    // Add the edited message
+    const editedMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: newContent,
+      timestamp: new Date(),
+      images,
+    };
+
+    const isFirstMessage = messageIndex === 0;
+
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeConversationId
+          ? {
+            ...c,
+            messages: [...updatedMessages, editedMessage],
+            updatedAt: new Date(),
+            title: isFirstMessage ? 'Generating title...' : c.title
+          }
+          : c
+      )
+    );
+
+    // Send the edited message, skipping the second add
+    await sendMessage(newContent, images, true);
+  }, [activeConversationId, conversations, sendMessage]);
+
+  // Sort conversations: pinned first, then by updatedAt
+  const sortedConversations = [...conversations].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return b.updatedAt.getTime() - a.updatedAt.getTime();
+  });
+
+  return {
+    messages,
+    conversations: sortedConversations,
+    activeConversationId,
+    isLoading,
+    sendMessage,
+    createNewConversation,
+    setActiveConversationId,
+    searchMessages,
+    clearMessages,
+    updateMessageFeedback,
+    editMessage,
+    deleteConversation,
+    renameConversation,
+    togglePinConversation,
+  };
+}

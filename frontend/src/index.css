@@ -1,0 +1,397 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Background layers */
+    --background: 30 15% 98%;
+    --foreground: 20 25% 10%;
+
+    /* Cards and surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 20 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 25% 10%;
+
+    /* Primary: Soft Warm Orange - Even Lighter */
+    --primary: 28 70% 68%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Warm neutral */
+    --secondary: 30 15% 94%;
+    --secondary-foreground: 20 25% 20%;
+
+    /* Muted surfaces */
+    --muted: 30 15% 96%;
+    --muted-foreground: 20 10% 45%;
+
+    /* Accent: Soft Orange tint */
+    --accent: 25 80% 95%;
+    --accent-foreground: 25 85% 40%;
+
+    /* Semantic colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 69% 41%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* UI elements */
+    --border: 30 15% 90%;
+    --input: 30 15% 90%;
+    --ring: 28 70% 68%;
+
+    --radius: 0.75rem;
+
+    /* Chat-specific tokens */
+    --chat-user-bg: 28 70% 85%;
+    --chat-user-foreground: 0 0% 0%;
+    --chat-ai-bg: 0 0% 100%;
+    --chat-ai-foreground: 20 25% 10%;
+    --chat-ai-border: 30 15% 90%;
+
+    /* Source card tokens */
+    --source-bg: 30 15% 98%;
+    --source-border: 25 70% 88%;
+    --source-accent: 28 70% 68%;
+
+    /* Sidebar */
+    --sidebar-background: 30 10% 97%;
+    --sidebar-foreground: 20 25% 15%;
+    --sidebar-primary: 28 70% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 80% 95%;
+    --sidebar-accent-foreground: 25 85% 40%;
+    --sidebar-border: 30 15% 92%;
+    --sidebar-ring: 28 70% 68%;
+  }
+
+  .dark {
+    --background: 20 20% 7%;
+    --foreground: 30 20% 95%;
+
+    --card: 20 20% 10%;
+    --card-foreground: 30 20% 95%;
+
+    --popover: 20 20% 10%;
+    --popover-foreground: 30 20% 95%;
+
+    --primary: 25 80% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 15% 15%;
+    --secondary-foreground: 30 20% 90%;
+
+    --muted: 20 15% 18%;
+    --muted-foreground: 30 15% 55%;
+
+    --accent: 25 45% 18%;
+    --accent-foreground: 25 80% 70%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 80% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 20 15% 20%;
+    --input: 20 15% 20%;
+    --ring: 25 80% 60%;
+
+    --chat-user-bg: 25 80% 60%;
+    --chat-user-foreground: 0 0% 0%;
+    --chat-ai-bg: 20 20% 12%;
+    --chat-ai-foreground: 30 20% 95%;
+    --chat-ai-border: 20 15% 20%;
+
+    --source-bg: 20 20% 10%;
+    --source-border: 25 35% 30%;
+    --source-accent: 25 80% 60%;
+
+    --sidebar-background: 20 20% 6%;
+    --sidebar-foreground: 30 20% 90%;
+    --sidebar-primary: 25 80% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 45% 15%;
+    --sidebar-accent-foreground: 25 80% 70%;
+    --sidebar-border: 20 15% 15%;
+    --sidebar-ring: 25 80% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+}
+
+@layer utilities {
+
+  /* Glass morphism */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-strong {
+    @apply bg-card/95 backdrop-blur-2xl border border-border/30;
+  }
+
+  /* Gradient border */
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-250 ease-out;
+  }
+
+  /* Message animations */
+  @keyframes message-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-message-in {
+    animation: message-in 0.25s ease-out forwards;
+  }
+
+  /* Typing indicator */
+  @keyframes typing-dot {
+
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  .animate-typing-1 {
+    animation: typing-dot 1.4s ease-in-out infinite;
+  }
+
+  .animate-typing-2 {
+    animation: typing-dot 1.4s ease-in-out 0.2s infinite;
+  }
+
+  .animate-typing-3 {
+    animation: typing-dot 1.4s ease-in-out 0.4s infinite;
+  }
+
+  /* Pulse for active states */
+  @keyframes subtle-pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .animate-subtle-pulse {
+    animation: subtle-pulse 2s ease-in-out infinite;
+  }
+
+  /* Glow animation */
+  @keyframes glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+    }
+
+    50% {
+      box-shadow: 0 0 30px hsl(var(--primary) / 0.4);
+    }
+  }
+
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite;
+  }
+
+  /* Slide animations */
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s ease-out forwards;
+  }
+
+  /* Fade in up */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.3s ease-out forwards;
+  }
+
+  /* Shimmer */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg,
+        hsl(var(--muted)) 0%,
+        hsl(var(--accent)) 50%,
+        hsl(var(--muted)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  /* Thinking animation steps */
+  @keyframes thinking-step {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes thinking-progress {
+    0% {
+      width: 0%;
+    }
+
+    50% {
+      width: 80%;
+    }
+
+    100% {
+      width: 100%;
+    }
+  }
+
+  .animate-thinking-step-1 {
+    animation: thinking-step 0.4s ease-out forwards;
+  }
+
+  .animate-thinking-step-2 {
+    opacity: 0;
+    animation: thinking-step 0.4s ease-out 0.6s forwards;
+  }
+
+  .animate-thinking-step-3 {
+    opacity: 0;
+    animation: thinking-step 0.4s ease-out 1.2s forwards;
+  }
+
+  .animate-thinking-progress {
+    animation: thinking-progress 2s ease-out infinite;
+  }
+
+  /* Custom Bar Loader */
+  .loader {
+    height: 4px;
+    width: 130px;
+    --c: no-repeat linear-gradient(hsl(var(--primary)) 0 0);
+    background: var(--c), var(--c), hsl(var(--primary) / 0.2);
+    background-size: 60% 100%;
+    animation: l16 3s infinite;
+    border-radius: 2px;
+    margin: 10px 0;
+  }
+
+  @keyframes l16 {
+    0% {
+      background-position: -150% 0, -150% 0;
+    }
+
+    66% {
+      background-position: 250% 0, -150% 0;
+    }
+
+    100% {
+      background-position: 250% 0, 250% 0;
+    }
+  }
+}

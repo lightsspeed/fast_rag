@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+redis
+chromadb
+sentence-transformers
+groq
+pydantic
+pydantic-settings
+python-multipart
+spacy
+pypdf
+httpx
+pytest
