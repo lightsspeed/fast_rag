@@ -1,8 +1,8 @@
 :root {
   /* Dark Mode (Default) - Amber/Orange Palette */
-  --primary: #f59e0b;
-  --primary-glow: rgba(245, 158, 11, 0.25);
-  --secondary: #ea580c;
+  --primary: #d97706;
+  --primary-glow: rgba(217, 119, 6, 0.25);
+  --secondary: #c2410c;
   --bg-deep: #030712;
   --bg-surface: rgba(17, 24, 39, 0.7);
   --text-main: #f3f4f6;

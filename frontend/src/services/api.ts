@@ -134,6 +134,24 @@ export const api = {
     },
 
     /**
+     * Generate a title for the chat based on the first message
+     */
+    async generateChatTitle(query: string): Promise<string> {
+        const response = await fetch(`${API_BASE_URL}${API_V1_PREFIX}/chat/title`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate title');
+        }
+
+        const data = await response.json();
+        return data.title;
+    },
+
+    /**
      * Clear database placeholder
      */
     async clearDatabase(): Promise<any> {

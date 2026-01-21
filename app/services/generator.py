@@ -59,8 +59,9 @@ Provide detailed, well-structured answers in markdown format.
 Note: Some chunks contains tables marked with [Table Start] and [Table End].
 Interpret these as structured data and present them clearly in your answers if relevant.
 
-CRITICAL RULE: Start EVERY response with a title on the first line in this exact format:
-**Title: [2-3 Word Title]**
+CRITICAL RULE: The VERY FIRST line of your response MUST be a title in this exact format:
+# [2-3 Word Title]
+This makes it big and bold in the chat.
 
 This title will be used to name the chat conversation. It must follow these rules:
 1. Is EXACTLY 2-3 words (no more, no less)

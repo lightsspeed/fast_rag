@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import shutil
@@ -16,6 +16,7 @@ from app.services.generator import generator
 from app.services.cache import redis_cache
 from app.db.chroma import get_collection
 from app.services.ingestion import ingestion_service
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -35,7 +36,9 @@ class TitleRequest(BaseModel):
 # --- Endpoints ---
 
 @router.post("/documents/upload")
+@limiter.limit("5/minute")
 async def upload_document(
+    request: Request,
     files: List[UploadFile] = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
@@ -126,6 +129,7 @@ class TitleRequest(BaseModel):
     query: str
 
 @router.post("/chat/title")
-async def generate_chat_title(request: TitleRequest):
+@limiter.limit("20/minute")
+async def generate_chat_title(request: TitleRequest, req: Request):
     title = generator.generate_title(request.query)
     return {"title": title}

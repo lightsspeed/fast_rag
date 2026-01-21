@@ -13,3 +13,4 @@ spacy
 pypdf
 httpx
 pytest
+slowapi

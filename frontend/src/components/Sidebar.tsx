@@ -166,8 +166,16 @@ export function Sidebar({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md opacity-100 text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-ring z-10"
-                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                          "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-lg transition-all z-20",
+                          conv.id === activeConversationId
+                            ? "opacity-100 text-foreground bg-black/5 dark:bg-white/10"
+                            : "opacity-0 group-hover:opacity-60 hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
                       >
                         <MoreHorizontal className="h-5 w-5" />
                       </button>

@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 20 25% 10%;
 
-    /* Primary: Soft Warm Orange - Even Lighter */
-    --primary: 28 70% 68%;
+    /* Primary: Rich Warm Orange - Darkened for better presence */
+    --primary: 28 80% 58%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary: Warm neutral */
@@ -28,9 +28,9 @@
     --muted: 30 15% 96%;
     --muted-foreground: 20 10% 45%;
 
-    /* Accent: Soft Orange tint */
-    --accent: 25 80% 95%;
-    --accent-foreground: 25 85% 40%;
+    /* Accent: Warm Orange tint */
+    --accent: 25 80% 90%;
+    --accent-foreground: 25 85% 35%;
 
     /* Semantic colors */
     --destructive: 0 72% 51%;
@@ -45,12 +45,12 @@
     /* UI elements */
     --border: 30 15% 90%;
     --input: 30 15% 90%;
-    --ring: 28 70% 68%;
+    --ring: 28 80% 58%;
 
     --radius: 0.75rem;
 
     /* Chat-specific tokens */
-    --chat-user-bg: 28 70% 85%;
+    --chat-user-bg: 28 80% 80%;
     --chat-user-foreground: 0 0% 0%;
     --chat-ai-bg: 0 0% 100%;
     --chat-ai-foreground: 20 25% 10%;
@@ -64,12 +64,12 @@
     /* Sidebar */
     --sidebar-background: 30 10% 97%;
     --sidebar-foreground: 20 25% 15%;
-    --sidebar-primary: 28 70% 68%;
+    --sidebar-primary: 28 80% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 80% 95%;
-    --sidebar-accent-foreground: 25 85% 40%;
+    --sidebar-accent: 25 80% 90%;
+    --sidebar-accent-foreground: 25 85% 35%;
     --sidebar-border: 30 15% 92%;
-    --sidebar-ring: 28 70% 68%;
+    --sidebar-ring: 28 80% 58%;
   }
 
   .dark {

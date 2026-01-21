@@ -154,32 +154,38 @@ export function useChat() {
         },
         // onContent
         (text) => {
+          if (!assistantContent) {
+            // Start the deliberate 2-second check timer when the first token arrives
+            setTimeout(() => {
+              setConversations((prev) =>
+                prev.map((conv) => {
+                  if (conv.id !== activeConversationId) return conv;
+
+                  const isPlaceholder = ['Generating title...', 'New Chat', 'New conversation'].includes(conv.title);
+                  if (!isPlaceholder) return conv;
+
+                  // Perform the "proper check" on what we have so far
+                  const h1Match = assistantContent.match(/^#\s*(?:Title:\s*)?([^*#\n]{3,60})/i) ||
+                    assistantContent.match(/Title:\s*(?:\*\*)?([^*:\n]{3,60})/i);
+
+                  if (h1Match?.[1]) {
+                    return { ...conv, title: h1Match[1].trim() };
+                  }
+                  return conv;
+                })
+              );
+            }, 2000);
+          }
+
           assistantContent += text;
 
-          // Update message content and title in real-time
+          // Update message content in real-time
           setConversations((prev) =>
             prev.map((conv) => {
               if (conv.id !== activeConversationId) return conv;
 
-              let updatedTitle = conv.title;
-
-              // Only parse title during the first message exchange
-              const isFirstExchange = conv.messages.length <= 2 || conv.title === 'Generating title...' || conv.title === 'New Chat' || conv.title === 'New conversation';
-
-              if (isFirstExchange) {
-                // Flexible regex to capture the growing title from the first line
-                const titleMatch = assistantContent.match(/^[\s\n]*(?:\*\*)?(?:Title:\s*)?([^*#\n]{2,40})/i);
-                if (titleMatch && titleMatch[1]) {
-                  const candidate = titleMatch[1].trim();
-                  if (candidate) {
-                    updatedTitle = candidate;
-                  }
-                }
-              }
-
               return {
                 ...conv,
-                title: updatedTitle,
                 messages: conv.messages.map((msg) =>
                   msg.id === assistantMessageId
                     ? { ...msg, content: assistantContent }
@@ -194,6 +200,27 @@ export function useChat() {
         () => {
           setIsLoading(false);
           abortControllerRef.current = null;
+
+          // Final Resolution Fallback (if timer didn't catch it or stream was too short)
+          setTimeout(() => {
+            setConversations((prev) =>
+              prev.map((conv) => {
+                if (conv.id !== activeConversationId) return conv;
+
+                const isPlaceholder = ['Generating title...', 'New Chat', 'New conversation'].includes(conv.title);
+                if (!isPlaceholder) return conv;
+
+                const finalMatch = assistantContent.match(/^#\s*(?:Title:\s*)?([^*#\n]{3,60})/i) ||
+                  assistantContent.match(/Title:\s*(?:\*\*)?([^*:\n]{3,60})/i);
+
+                if (finalMatch?.[1]) return { ...conv, title: finalMatch[1].trim() };
+
+                const words = content.trim().split(/\s+/);
+                const fallback = words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
+                return { ...conv, title: fallback || 'New Chat' };
+              })
+            );
+          }, 500); // Small extra buffer on complete
         },
         // onError
         (error) => {
