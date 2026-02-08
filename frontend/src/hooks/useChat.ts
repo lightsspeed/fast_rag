@@ -237,6 +237,26 @@ export function useChat() {
         (error) => {
           if (error.message === 'Aborted') {
             console.log('Query aborted by user');
+            // Update message to show it was stopped
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv.id === activeConversationId
+                  ? {
+                    ...conv,
+                    messages: conv.messages.map((msg) =>
+                      msg.id === assistantMessageId
+                        ? {
+                          ...msg,
+                          content: assistantContent
+                            ? `${assistantContent}\n\n*Generation stopped by user.*`
+                            : "*Generation stopped by user.*"
+                        }
+                        : msg
+                    ),
+                  }
+                  : conv
+              )
+            );
             return;
           }
           console.error('WebSocket error:', error);
