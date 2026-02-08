@@ -120,7 +120,11 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
           <div
             className={cn(
               "rounded-3xl bg-card text-card-foreground border-2 border-primary/20 shadow-sm shadow-primary/5",
-              isUser ? "px-5 py-3 flex flex-col gap-3 min-h-[3rem]" : "p-8 md:p-12"
+              isUser
+                ? "px-5 py-3 flex flex-col gap-3 min-h-[3rem]"
+                : message.isStopped
+                  ? "px-6 py-4 max-w-fit"
+                  : "p-8 md:p-12"
             )}
           >
             {/* Display images for user messages - ABOVE the text */}
