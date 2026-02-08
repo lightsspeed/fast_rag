@@ -123,7 +123,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
               isUser
                 ? "px-5 py-3 flex flex-col gap-3 min-h-[3rem]"
                 : message.isStopped
-                  ? "px-6 py-4 max-w-fit"
+                  ? "px-6 py-4 max-w-fit text-center"
                   : "p-8 md:p-12"
             )}
           >
