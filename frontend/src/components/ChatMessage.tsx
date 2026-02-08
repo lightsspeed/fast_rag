@@ -88,28 +88,32 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
     <div
       className={cn(
         "flex gap-3 animate-message-in",
-        isUser ? "flex-row-reverse" : "flex-row"
+        message.isStopped ? "justify-center" : (isUser ? "flex-row-reverse" : "flex-row")
       )}
     >
       {/* Avatar */}
-      <div
-        className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-          isUser ? "bg-primary" : "bg-accent"
-        )}
-      >
-        {isUser ? (
-          <User className="w-4 h-4 text-primary-foreground" />
-        ) : (
-          <Sparkles className="w-4 h-4 text-accent-foreground" />
-        )}
-      </div>
+      {!message.isStopped && (
+        <div
+          className={cn(
+            "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+            isUser ? "bg-primary" : "bg-accent"
+          )}
+        >
+          {isUser ? (
+            <User className="w-4 h-4 text-primary-foreground" />
+          ) : (
+            <Sparkles className="w-4 h-4 text-accent-foreground" />
+          )}
+        </div>
+      )}
 
       {/* Content or Loading Indicator */}
       <div
         className={cn(
           "flex flex-col",
-          isUser ? "items-end max-w-[70%]" : "items-start w-full max-w-full"
+          message.isStopped
+            ? "items-center"
+            : (isUser ? "items-end max-w-[70%]" : "items-start w-full max-w-full")
         )}
       >
         {isStreaming ? (
