@@ -45,6 +45,7 @@ export const api = {
     async streamQuery(
         query: string,
         sessionId: string,
+        images: string[] | undefined,
         onMetadata: (metadata: StreamMetadata) => void,
         onContent: (text: string) => void,
         onComplete: () => void,
@@ -57,7 +58,8 @@ export const api = {
             socket.onopen = () => {
                 socket.send(JSON.stringify({
                     query,
-                    session_id: sessionId
+                    session_id: sessionId,
+                    images
                 }));
             };
 

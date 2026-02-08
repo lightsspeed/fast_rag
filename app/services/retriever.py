@@ -58,16 +58,32 @@ class RetrieverService:
         pairs = [[query, doc['text']] for doc in all_candidates]
         scores = self.reranker.predict(pairs)
         
+        # Apply sigmoid to normalize scores roughly between 0 and 1
+        import math
+        def sigmoid(x):
+            return 1 / (1 + math.exp(-x))
+
         for i, doc in enumerate(all_candidates):
-            doc['score'] = float(scores[i])
+            doc['score'] = float(sigmoid(scores[i]))
         
         # Sort by Reranker score (descending)
         all_candidates.sort(key=lambda x: x['score'], reverse=True)
 
+        # 5. Fallback to Web Search if Document Results are weak
+        top_score = all_candidates[0]['score'] if all_candidates else 0
+        if top_score < 0.4:
+            from app.services.web_search import web_search
+            print(f"Low document confidence ({top_score:.2f}). Fetching web results...")
+            web_results = await web_search.search(query)
+            if web_results:
+                # Optional: Rerank web results too
+                all_candidates.extend(web_results)
+                all_candidates.sort(key=lambda x: x['score'], reverse=True)
+
         # Take Top K
         final_chunks = all_candidates[:top_k]
 
-        # 5. Cache Results
+        # 6. Cache Results
         redis_cache.set_query_cache(query, {'chunks': final_chunks})
         
         return final_chunks

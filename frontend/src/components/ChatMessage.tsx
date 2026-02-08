@@ -1,20 +1,63 @@
 import { useState } from 'react';
-import { User, Sparkles, ThumbsUp, ThumbsDown, Copy, Check, Pencil } from 'lucide-react';
+import { TypingIndicator } from './TypingIndicator';
+import { User, Sparkles, ThumbsUp, ThumbsDown, Copy, Check, Pencil, Library } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { SourceCard } from './SourceCard';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage as ChatMessageType } from '@/types/chat';
+import type { ChatMessage as ChatMessageType, SourceCitation } from '@/types/chat';
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  isStreaming?: boolean;
   onEdit?: (message: ChatMessageType) => void;
   onFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => void;
+  onViewSources?: (sources: SourceCitation[]) => void;
 }
 
-export function ChatMessage({ message, onEdit, onFeedback }: ChatMessageProps) {
+const CodeBlock = ({ children, isUser }: { children: any, isUser: boolean }) => {
+  const [copied, setCopied] = useState(false);
+  const codeString = String(children).replace(/\n$/, '');
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(codeString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="group relative my-4">
+      <code
+        className={cn(
+          "font-mono text-[14px] font-medium block p-4 rounded-xl border border-border/50 shadow-sm overflow-x-auto",
+          isUser
+            ? "text-chat-user-foreground bg-black/5"
+            : "text-foreground bg-muted/50 dark:bg-muted/20"
+        )}
+      >
+        {children}
+      </code>
+      {!isUser && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background shadow-sm"
+          onClick={handleCopy}
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-green-500" />
+          ) : (
+            <Copy className="h-4 w-4 text-muted-foreground" />
+          )}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSources }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
@@ -62,162 +105,204 @@ export function ChatMessage({ message, onEdit, onFeedback }: ChatMessageProps) {
         )}
       </div>
 
-      {/* Content */}
+      {/* Content or Loading Indicator */}
       <div
         className={cn(
-          "flex flex-col max-w-[75%]",
-          isUser ? "items-end" : "items-start"
+          "flex flex-col",
+          isUser ? "items-end max-w-[70%]" : "items-start w-full max-w-full"
         )}
       >
-        <div
-          className={cn(
-            "rounded-2xl px-4 py-2.5",
-            isUser
-              ? "bg-chat-user text-chat-user-foreground rounded-tr-sm"
-              : "bg-chat-ai text-chat-ai-foreground border border-chat-ai-border rounded-tl-sm shadow-soft"
-          )}
-        >
-          <div className={cn(
-            "text-sm leading-relaxed prose prose-sm max-w-none",
-            isUser
-              ? "text-black prose-p:text-black prose-headings:text-black prose-strong:text-black prose-ul:text-black prose-ol:text-black"
-              : "text-foreground dark:prose-invert"
-          )}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ node, ...props }) => (
-                  <a
-                    {...props}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline font-medium"
-                  />
-                ),
-                p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />,
-                ul: ({ node, ...props }) => <ul {...props} className="list-disc ml-4 mb-2" />,
-                ol: ({ node, ...props }) => <ol {...props} className="list-decimal ml-4 mb-2" />,
-                li: ({ node, ...props }) => <li {...props} className="mb-1" />,
-                code: ({ node, ...props }) => {
-                  const { inline, ...rest } = props as any;
-                  return (
-                    <code
-                      {...rest}
-                      className={cn(
-                        "font-mono text-xs font-semibold",
-                        isUser
-                          ? "text-black bg-black/10"
-                          : "text-foreground bg-muted/50 dark:bg-muted/20",
-                        inline ? "px-1 py-0.5 rounded" : "block p-4 rounded-lg border border-border/50 my-2"
-                      )}
-                    />
-                  );
-                },
-                pre: ({ node, ...props }) => (
-                  <pre {...props} className="bg-transparent p-0 m-0 overflow-auto" />
-                ),
-                img: ({ node, ...props }) => {
-                  const [hasError, setHasError] = useState(false);
-
-                  if (hasError) return null;
-
-                  return (
-                    <img
-                      {...props}
-                      className="rounded-lg max-w-full h-auto my-2 border border-border"
-                      onError={() => setHasError(true)}
-                    />
-                  );
-                }
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
+        {isStreaming ? (
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <TypingIndicator />
           </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className={cn(
-          "flex items-center gap-1 mt-1 px-1",
-          isUser ? "flex-row-reverse" : "flex-row"
-        )}>
-          {/* Copy button - for both */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-green-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
+        ) : (
+          <div
+            className={cn(
+              "rounded-3xl bg-card text-card-foreground border-2 border-primary/20 shadow-sm shadow-primary/5",
+              isUser ? "px-5 py-3 flex flex-col gap-3 min-h-[3rem]" : "p-8 md:p-12"
             )}
-          </Button>
+          >
+            {/* Display images for user messages - ABOVE the text */}
+            {isUser && message.images && message.images.length > 0 && (
+              <div className="flex flex-wrap gap-2 w-full">
+                {message.images.map((img, idx) => (
+                  <img
+                    key={idx}
+                    src={img}
+                    alt={`Uploaded image ${idx + 1}`}
+                    className="max-w-full h-auto rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity"
+                    style={{ maxHeight: '300px', objectFit: 'contain' }}
+                  />
+                ))}
+              </div>
+            )}
 
-          {/* User message: Edit button */}
-          {isUser && onEdit && (
+            <div className={cn(
+              "w-full max-w-none",
+              isUser
+                ? "text-chat-user-foreground"
+                : "text-foreground"
+            )}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ ...props }) => (
+                    <h1 className="text-3xl font-bold mb-6 mt-2 tracking-tight text-foreground" {...props} />
+                  ),
+                  h2: ({ ...props }) => (
+                    <h2 className="text-2xl font-bold mb-4 mt-8 tracking-tight text-foreground/90" {...props} />
+                  ),
+                  h3: ({ ...props }) => (
+                    <h3 className="text-lg font-semibold mb-3 mt-6 text-foreground/90" {...props} />
+                  ),
+                  p: ({ ...props }) => (
+                    <p className={cn("text-base leading-7 text-foreground/80 font-normal", isUser ? "mb-0" : "mb-4")} {...props} />
+                  ),
+                  a: ({ ...props }) => (
+                    <a
+                      {...props}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium ml-0.5"
+                    />
+                  ),
+                  ul: ({ ...props }) => (
+                    <ul className="list-disc pl-6 mb-4 space-y-2 text-[15px] text-foreground/80" {...props} />
+                  ),
+                  ol: ({ ...props }) => (
+                    <ol className="list-decimal pl-6 mb-4 space-y-2 text-[15px] text-foreground/80" {...props} />
+                  ),
+                  li: ({ ...props }) => (
+                    <li className="pl-1" {...props} />
+                  ),
+                  blockquote: ({ ...props }) => (
+                    <blockquote className="border-l-4 border-primary/30 pl-4 italic my-4 text-muted-foreground" {...props} />
+                  ),
+                  code: ({ node, ...props }) => {
+                    const { inline, children, ...rest } = props as any;
+                    const codeString = String(children).replace(/\n$/, '');
+
+                    if (inline) {
+                      return (
+                        <code
+                          {...rest}
+                          className={cn(
+                            "font-mono text-[14px] font-medium px-1.5 py-0.5 rounded",
+                            isUser
+                              ? "text-chat-user-foreground bg-black/5"
+                              : "text-foreground bg-muted/50 dark:bg-muted/20"
+                          )}
+                        >
+                          {children}
+                        </code>
+                      );
+                    }
+
+                    return <CodeBlock isUser={isUser}>{children}</CodeBlock>;
+                  },
+                  pre: ({ ...props }) => (
+                    <pre className="bg-transparent p-0 m-0 overflow-hidden" {...props} />
+                  ),
+                  img: ({ node, ...props }) => {
+                    const [hasError, setHasError] = useState(false);
+
+                    if (hasError) return null;
+
+                    return (
+                      <img
+                        {...props}
+                        className="rounded-lg max-w-full h-auto my-2 border border-border"
+                        onError={() => setHasError(true)}
+                      />
+                    );
+                  }
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons - Hide when streaming */}
+        {!isStreaming && (
+          <div className={cn(
+            "flex items-center gap-1 mt-1 px-1",
+            isUser ? "flex-row-reverse" : "flex-row"
+          )}>
+            {/* Copy button - for both */}
             <Button
               variant="ghost"
               size="icon"
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
-              onClick={() => onEdit(message)}
+              onClick={handleCopy}
             >
-              <Pencil className="h-3 w-3" />
+              {copied ? (
+                <Check className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
             </Button>
-          )}
 
-          {/* AI message: Thumbs up/down */}
-          {!isUser && (
-            <>
+            {/* User message: Edit button */}
+            {isUser && onEdit && (
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(
-                  "h-6 w-6",
-                  message.feedback === 'up'
-                    ? "text-green-500 hover:text-green-600"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => handleFeedback('up')}
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                onClick={() => onEdit(message)}
               >
-                <ThumbsUp className="h-3 w-3" />
+                <Pencil className="h-3 w-3" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-6 w-6",
-                  message.feedback === 'down'
-                    ? "text-red-500 hover:text-red-600"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => handleFeedback('down')}
-              >
-                <ThumbsDown className="h-3 w-3" />
-              </Button>
-            </>
-          )}
-        </div>
+            )}
 
-        {/* Sources - Commented out as requested
-        {message.sources && message.sources.length > 0 && (
-          <div className="mt-3 w-full space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            {/* AI message: Thumbs up/down */}
+            {!isUser && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-6 w-6",
+                    message.feedback === 'up'
+                      ? "text-green-500 hover:text-green-600"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => handleFeedback('up')}
+                >
+                  <ThumbsUp className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-6 w-6",
+                    message.feedback === 'down'
+                      ? "text-red-500 hover:text-red-600"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => handleFeedback('down')}
+                >
+                  <ThumbsDown className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+
+            {/* Sources button - only for AI with sources */}
+            {!isUser && message.sources && message.sources.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto h-7 gap-1.5 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:border-primary/40 bg-background/50 backdrop-blur-sm"
+                onClick={() => onViewSources?.(message.sources!)}
+              >
+                <Library className="h-3.5 w-3.5 text-primary" />
                 Sources
-              </span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <div className="space-y-2">
-              {message.sources.map((source, index) => (
-                <SourceCard key={source.id} source={source} index={index} />
-              ))}
-            </div>
+              </Button>
+            )}
           </div>
         )}
-        */}
       </div>
     </div>
   );

@@ -3,8 +3,10 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatArea } from '@/components/ChatArea';
 import { CommandPalette } from '@/components/CommandPalette';
+import { SourcesSidebar } from '@/components/SourcesSidebar';
 import { useChat } from '@/hooks/useChat';
 import { useTheme } from '@/hooks/useTheme';
+import type { SourceCitation } from '@/types/chat';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -23,10 +25,12 @@ const Index = () => {
     renameConversation,
     togglePinConversation,
   } = useChat();
-  
+
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingInput, setPendingInput] = useState('');
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [activeSources, setActiveSources] = useState<SourceCitation[]>([]);
 
   const openSearch = () => setCommandPaletteOpen(true);
 
@@ -38,11 +42,16 @@ const Index = () => {
     setPendingInput('');
   }, []);
 
+  const handleViewSources = useCallback((sources: SourceCitation[]) => {
+    setActiveSources(sources);
+    setSourcesOpen(true);
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <Header 
-        theme={theme} 
+      <Header
+        theme={theme}
         onToggleTheme={toggleTheme}
         onSelectIssue={handleSelectIssue}
       />
@@ -72,8 +81,16 @@ const Index = () => {
           onClearExternalInput={handleClearPendingInput}
           onFeedback={updateMessageFeedback}
           onEditMessage={editMessage}
+          onViewSources={handleViewSources}
         />
       </div>
+
+      {/* Sources Sidebar */}
+      <SourcesSidebar
+        isOpen={sourcesOpen}
+        onClose={() => setSourcesOpen(false)}
+        sources={activeSources}
+      />
 
       {/* Command Palette */}
       <CommandPalette

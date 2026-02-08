@@ -125,14 +125,17 @@ export function useChat() {
       await api.streamQuery(
         content,
         activeConversationId,
+        images,
         // onMetadata
         (metadata) => {
           // Convert backend sources to frontend format
           const sources: SourceCitation[] = metadata.sources.map((source, idx) => ({
-            id: source.chunk_id || `source-${idx}`,
-            documentName: source.metadata?.filename || 'Unknown Document',
-            excerpt: source.content || '',
-            confidence: 0.9, // Default confidence
+            id: source.id || `source-${idx}`,
+            documentName: source.documentName || 'Unknown Document',
+            excerpt: source.excerpt || '',
+            confidence: source.confidence !== undefined ? source.confidence : 0.9,
+            title: source.title,
+            isWeb: source.isWeb,
           }));
           assistantSources = sources;
 

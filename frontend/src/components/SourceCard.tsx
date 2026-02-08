@@ -13,10 +13,14 @@ export function SourceCard({ source, index }: SourceCardProps) {
 
   const isUrl = source.documentName.startsWith('http');
 
-  const confidenceColor =
-    source.confidence >= 0.8 ? 'text-success' :
-      source.confidence >= 0.5 ? 'text-warning' :
-        'text-muted-foreground';
+  const getConfidenceDetails = (score: number) => {
+    if (score > 0.7) return { label: 'High', color: 'text-emerald-500' };
+    if (score > 0.4) return { label: 'Medium', color: 'text-amber-500' };
+    if (score > 0.15) return { label: 'Low', color: 'text-rose-500' };
+    return { label: 'Null', color: 'text-muted-foreground opacity-50' };
+  };
+
+  const { label, color: confidenceColor } = getConfidenceDetails(source.confidence);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // If it's a URL and we're clicking the "View in document" area or the header, open it
@@ -53,11 +57,11 @@ export function SourceCard({ source, index }: SourceCardProps) {
 
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <FileText className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground truncate">
-                {isUrl ? new URL(source.documentName).hostname : source.documentName}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 min-w-0">
+              <FileText className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground break-words line-clamp-2">
+                {source.title || (isUrl ? new URL(source.documentName).hostname : source.documentName)}
               </span>
               {source.pageNumber && (
                 <span className="text-xs text-muted-foreground flex-shrink-0">
@@ -66,8 +70,8 @@ export function SourceCard({ source, index }: SourceCardProps) {
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className={cn("text-xs font-medium", confidenceColor)}>
-                {Math.round(source.confidence * 100)}%
+              <span className={cn("text-xs font-semibold uppercase tracking-wider", confidenceColor)}>
+                {label}
               </span>
               <button
                 onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}

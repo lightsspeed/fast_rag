@@ -7,14 +7,13 @@ class GeneratorService:
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         self.model = settings.GROQ_MODEL
         
-        self.system_prompt_template = """You are a helpful AI assistant that answers questions based on the provided context.
+        self.system_prompt_template = """You are a highly capable AI specialized in technical troubleshooting and document analysis. Your goal is to provide a comprehensive, in-depth explanation based on the provided context.
 
 Guidelines:
-1. Answer using information from the context below.
-2. If the context doesn't contain enough information, say so clearly.
-3. Cite the source chunk number when making specific claims.
-4. Be as detailed as possible based on the provided context. If the user asks for "full info", provide a comprehensive explanation.
-5. If multiple chunks contradict, acknowledge this and present both perspectives.
+1. **Thorough Answers**: Provide a detailed, step-by-step technical explanation. Always aim for depth and completeness.
+2. **NO INLINE CITATIONS**: Do not use citations like "[Chunk 1]" or "[1]" in your response text. Provide a natural, professionally written technical answer. 
+3. **Context Adherence**: Answer ONLY using information from the context below. If the context is missing info, state what is missing.
+4. **Professional Tone**: Be technical, clear, and professional. 
 
 Context:
 {context_chunks}
@@ -47,49 +46,65 @@ Answer:"""
             print(f"Query generation failed: {e}")
             return [query]
 
+    def _classify_query_type(self, query: str) -> str:
+        """Classify query to adjust response style."""
+        query_lower = query.lower()
+        
+        # How-to / Setup questions
+        if any(word in query_lower for word in ['how to', 'setup', 'configure', 'install', 'create']):
+            return 'howto'
+        # Comparison questions
+        elif any(word in query_lower for word in ['difference', 'vs', 'compare', 'better']):
+            return 'comparison'
+        # Explanation questions
+        elif any(word in query_lower for word in ['what is', 'explain', 'define', 'meaning']):
+            return 'explanation'
+        # Troubleshooting
+        elif any(word in query_lower for word in ['error', 'issue', 'problem', 'fix', 'debug']):
+            return 'troubleshooting'
+        else:
+            return 'general'
+
     async def generate_stream(self, query: str, context_chunks: List[dict]) -> AsyncGenerator[str, None]:
-        # Prepare context string
         context_text = "\n\n".join(
-            [f"Chunk {i+1}: {chunk['text']}" for i, chunk in enumerate(context_chunks)]
+            [f"[Chunk {i+1}]\n{chunk['text']}" for i, chunk in enumerate(context_chunks)]
         )
         
-        # Better structure for Groq/Llama
-        system_instructions = f"""You are a helpful AI assistant that answers questions based on the provided context.
-Provide detailed, well-structured answers in markdown format.
-Note: Some chunks contains tables marked with [Table Start] and [Table End].
-Interpret these as structured data and present them clearly in your answers if relevant.
+        query_type = self._classify_query_type(query)
+        
+        # Adjust instructions based on query type
+        style_guidance = {
+            'howto': "Focus on step-by-step instructions and practical examples. Include prerequisites if mentioned in context.",
+            'comparison': "Present both sides clearly. Use a balanced structure highlighting key differences.",
+            'explanation': "Provide a clear conceptual overview first, then dive into details.",
+            'troubleshooting': "Start with the most likely solution. Provide debugging steps if available.",
+            'general': "Answer directly and comprehensively."
+        }
+        
+        system_instructions = f"""You are a highly capable AI specialized in technical troubleshooting and document analysis. Your goal is to provide a comprehensive, in-depth explanation based on the provided context.
 
-CRITICAL RULE: The VERY FIRST line of your response MUST be a title in this exact format:
-# [2-3 Word Title]
-This makes it big and bold in the chat.
+**Technical Guidelines:**
+1. **Depth & Detail**: Provide extensive, step-by-step technical explanations. Never be brief if the context provides details.
+2. **NO INLINE CITATIONS**: Do not use citations like "[Chunk 1]" or "[1]" in your response. The citations are handled by the UI "Sources" tab; your text should be clean and professional.
+3. **Answer directly**: Address the user's specific problem (e.g., error codes, BSOD symptoms) using technical steps from the documentation.
+4. **Formatting**: Use headers, bold text, and code blocks to make complex instructions easy to follow.
 
-This title will be used to name the chat conversation. It must follow these rules:
-1. Is EXACTLY 2-3 words (no more, no less)
-2. Captures the main topic or intent
-3. Uses Title Case
-4. Contains NO special characters, emojis, or punctuation (except the bold markers)
-5. Descriptive and searchable
+**Context Provided:**
+{context_text}
 
-Example Guidance:
-- How-to: Action verb (e.g., "Build Chatbot")
-- Comparison: Use "vs" (e.g., "React vs Vue")
-- Data: Subject (e.g., "Sales Analysis")
-- Person: Name (e.g., "Einstein Biography")
-- Keep it simple and clear.
-
-After the Title line, proceed with your actual answer."""
+Remember: Be thorough, technical, and natural. Focus on solving the user's problem completely."""
         
         messages = [
             {"role": "system", "content": system_instructions},
-            {"role": "user", "content": f"Context:\n{context_text}\n\nUser Question: {query}"}
+            {"role": "user", "content": query}
         ]
 
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            temperature=0.1,
+            temperature=0.2,  # Slightly higher for more natural language
             max_tokens=2048,
-            top_p=0.9,
+            top_p=0.95,  # Slightly higher for better fluency
             stream=True,
             stop=None,
         )

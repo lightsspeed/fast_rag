@@ -14,3 +14,12 @@ pypdf
 httpx
 pytest
 slowapi
+
+opencv-python-headless
+pytesseract
+pdf2image
+pymupdf
+Pillow
+numpy
+
+google-generativeai

@@ -16,7 +16,12 @@ from app.services.generator import generator
 from app.services.cache import redis_cache
 from app.db.chroma import get_collection
 from app.services.ingestion import ingestion_service
+from app.services.vision import vision_service
 from app.core.limiter import limiter
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -81,44 +86,118 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
         while True:
             data = await websocket.receive_json()
             query = data.get("query")
-            session_id = data.get("session_id")
+            session_id = data.get("session_id", "default")
             user_id = data.get("user_id", "anonymous")
+            images = data.get("images", [])
+
+            # Load session context to prevent "context bleeding"
+            session_context = redis_cache.get_session(session_id, user_id) or {}
+            last_visual_context = session_context.get("last_visual_context", "")
+
+            if images:
+                logger.info(f"Switching to MULTIMODAL flow for {len(images)} images")
+                try:
+                    # 1. Extract visual keywords for better RAG retrieval
+                    visual_keywords = await vision_service.get_visual_keywords(images[0])
+                    augmented_query = query
+                    if visual_keywords:
+                         augmented_query = f"{query} (context: {visual_keywords})"
+                    
+                    # Store this context for the next turn
+                    session_context["last_visual_context"] = visual_keywords
+                    redis_cache.update_session(session_id, user_id, session_context)
+                    
+                    logger.info(f"Augmented query for RAG: {augmented_query}")
+
+                    # 2. Retrieve RAG context using augmented query
+                    chunks = await retriever.retrieve(augmented_query)
+                    
+                    # Send Citations
+                    sources = []
+                    for chunk in chunks:
+                        metadata = chunk.get('metadata', {})
+                        source_name = metadata.get('source', metadata.get('filename', 'Unknown'))
+                        sources.append({
+                            "id": chunk['id'],
+                            "documentName": source_name,
+                            "excerpt": chunk['text'][:300],
+                            "confidence": chunk.get('score', 0.0),
+                            "pageNumber": metadata.get('page'),
+                            "title": metadata.get('title'),
+                            "isWeb": metadata.get('is_web', False)
+                        })
+                    await websocket.send_json({"type": "sources", "sources": sources})
+
+                    # 3. Generate multimodal response
+                    async for token in vision_service.generate_multimodal_stream(query, images, chunks):
+                        await websocket.send_json({"type": "token", "content": token})
+                    
+                    await websocket.send_json({"type": "complete"})
+                    continue 
+
+                except Exception as e:
+                    logger.error(f"Multimodal flow failed for session {session_id}: {str(e)}", exc_info=True)
+                    await websocket.send_json({"type": "error", "message": "Failed to process image and query together."})
+                    continue
 
             if not query:
                 continue
 
-            # 1. Retrieve
-            chunks = await retriever.retrieve(query)
+            # --- Standard Text-Only Flow (Groq/Llama) ---
+            # 1. Augment Query with previous visual context if it exists
+            retrieval_query = query
+            if last_visual_context:
+                retrieval_query = f"{query} (previously identified: {last_visual_context})"
+                logger.info(f"Augmenting text-only query with visual memory: {retrieval_query}")
+
+            # 2. Retrieve
+            chunks = await retriever.retrieve(retrieval_query)
             
             # Send Citations
             sources = []
             for chunk in chunks:
+                metadata = chunk.get('metadata', {})
+                source_name = metadata.get('source', metadata.get('filename', 'Unknown'))
                 sources.append({
-                    "chunk_id": chunk['id'],
-                    "content": chunk['text'][:200] + "...",
-                    "metadata": chunk['metadata']
+                    "id": chunk['id'],
+                    "documentName": source_name,
+                    "excerpt": chunk['text'][:300],
+                    "confidence": chunk.get('score', 0.0),
+                    "pageNumber": metadata.get('page'),
+                    "title": metadata.get('title'),
+                    "isWeb": metadata.get('is_web', False)
                 })
             await websocket.send_json({"type": "sources", "sources": sources})
 
-            # 2. Generate (Stream)
+            # 3. Generate (Stream)
             async for token in generator.generate_stream(query, chunks):
                 await websocket.send_json({"type": "token", "content": token})
             
             await websocket.send_json({"type": "complete"})
             
-            # 3. Log
-            # Should be async or background
+            # 4. Log
             log = models.QueryLog(
                 user_id=user_id,
                 query_text=query,
                 retrieved_chunks=len(chunks),
-                response_time_ms=0 # TODO: measure time
+                response_time_ms=0 
             )
-            # db.add(log) # Need a new session or careful threading with websockets
+            # db.add(log)
             # db.commit() 
 
     except WebSocketDisconnect:
-        print("Client disconnected")
+        logger.info(f"Client disconnected: {session_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error in session {session_id}: {str(e)}", exc_info=True)
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
 
 @router.post("/feedback")
 def submit_feedback(feedback: FeedbackRequest, db: Session = Depends(get_db)):
@@ -133,3 +212,50 @@ class TitleRequest(BaseModel):
 async def generate_chat_title(request: TitleRequest, req: Request):
     title = generator.generate_title(request.query)
     return {"title": title}
+
+# --- Vision Analysis ---
+
+class VisionAnalysisRequest(BaseModel):
+    image_data: str  # Base64 data URL
+    prompt: Optional[str] = None  # Optional question about the image
+
+class VisionAnalysisResponse(BaseModel):
+    analysis: str
+    model: str
+    tokens_used: Optional[int] = None
+
+@router.post("/vision/analyze", response_model=VisionAnalysisResponse)
+@limiter.limit("5/minute")
+async def analyze_image(
+    body: VisionAnalysisRequest,
+    request: Request
+):
+    """
+    Analyze an image using Claude's vision API.
+    
+    Args:
+        body: VisionAnalysisRequest with image_data (base64 data URL) and optional prompt
+        request: FastAPI Request object (required for rate limiting)
+        
+    Returns:
+        VisionAnalysisResponse with analysis text, model name, and token usage
+        
+    Raises:
+        HTTPException: For validation errors or API failures
+    """
+    from app.services.vision import vision_service
+    
+    try:
+        # Use unified method that selects provider based on config
+        result = await vision_service.analyze_image(
+            image_data=body.image_data,
+            prompt=body.prompt
+        )
+        return VisionAnalysisResponse(**result)
+    except ValueError as e:
+        # Configuration or validation errors
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # API or other errors
+        logger.error(f"Vision analysis endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=f"Vision analysis failed: {str(e)}")

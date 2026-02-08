@@ -14,6 +14,7 @@ interface ChatAreaProps {
   onClearExternalInput?: () => void;
   onFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => void;
   onEditMessage?: (messageId: string, newContent: string, images?: string[]) => void;
+  onViewSources?: (sources: any[]) => void;
 }
 
 export function ChatArea({
@@ -24,6 +25,7 @@ export function ChatArea({
   onClearExternalInput,
   onFeedback,
   onEditMessage,
+  onViewSources,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
@@ -71,27 +73,18 @@ export function ChatArea({
         {messages.length === 0 ? (
           <EmptyState onSampleQuestion={(q) => setInputValue(q)} />
         ) : (
-          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-            {messages.map((message) => (
+          <div className="max-w-[1200px] mx-auto p-4 md:p-6 space-y-6">
+            {messages.map((message, index) => (
               <ChatMessage
                 key={message.id}
                 message={message}
+                isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
                 onEdit={handleEdit}
                 onFeedback={onFeedback}
+                onViewSources={onViewSources}
               />
             ))}
 
-            {/* Typing indicator */}
-            {isLoading && (
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
-                  <span className="text-primary-foreground text-xs font-semibold">AI</span>
-                </div>
-                <div className="bg-card border border-border rounded-2xl rounded-tl-md shadow-sm">
-                  <TypingIndicator />
-                </div>
-              </div>
-            )}
 
             {/* Scroll Anchor */}
             <div ref={bottomRef} className="h-4" />
@@ -100,7 +93,7 @@ export function ChatArea({
       </ScrollArea>
 
       {/* Input area */}
-      <div className="max-w-4xl mx-auto w-full">
+      <div className="max-w-[1200px] mx-auto w-full">
         {editingMessage && (
           <div className="mx-4 mb-2 p-2 bg-muted/50 border border-border rounded-lg flex items-center justify-between">
             <span className="text-sm text-muted-foreground">

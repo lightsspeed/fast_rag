@@ -3,7 +3,10 @@ export interface SourceCitation {
   documentName: string;
   excerpt: string;
   confidence: number;
+  confidenceLabel?: 'High' | 'Medium' | 'Low' | 'Null';
   pageNumber?: number;
+  title?: string;
+  isWeb?: boolean;
 }
 
 export interface ChatMessage {

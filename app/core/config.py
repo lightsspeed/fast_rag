@@ -1,6 +1,6 @@
 import os
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "FastRAG"
@@ -34,6 +34,15 @@ class Settings(BaseSettings):
     # LLM
     GROQ_API_KEY: str
     GROQ_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_VISION_MODEL: Optional[str] = "llama-3.2-90b-vision-preview"
+    
+
+    # GOOGLE (Gemini Vision)
+    GOOGLE_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+    
+    # BRAVE
+    BRAVE_API_KEY: Optional[str] = None
 
     class Config:
         env_file = ".env"

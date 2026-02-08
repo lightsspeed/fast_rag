@@ -5,126 +5,113 @@
 
 @layer base {
   :root {
-    /* Background layers */
-    --background: 30 15% 98%;
-    --foreground: 20 25% 10%;
+    /* Background layers - Premium Light Mode (Clean, Stark White) */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
 
     /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 20 25% 10%;
+    --card-foreground: 240 10% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 25% 10%;
+    --popover-foreground: 240 10% 3.9%;
 
-    /* Primary: Rich Warm Orange - Darkened for better presence */
-    --primary: 28 80% 58%;
+    /* Primary: Signature Orange */
+    --primary: 28 90% 55%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Warm neutral */
-    --secondary: 30 15% 94%;
-    --secondary-foreground: 20 25% 20%;
+    /* Secondary: Subtle Gray */
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
 
     /* Muted surfaces */
-    --muted: 30 15% 96%;
-    --muted-foreground: 20 10% 45%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
 
-    /* Accent: Warm Orange tint */
-    --accent: 25 80% 90%;
-    --accent-foreground: 25 85% 35%;
+    /* Accent */
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
 
     /* Semantic colors */
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 152 69% 41%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
     /* UI elements */
-    --border: 30 15% 90%;
-    --input: 30 15% 90%;
-    --ring: 28 80% 58%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 28 90% 55%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem; /* Tighter radius for premium feel */
 
-    /* Chat-specific tokens */
-    --chat-user-bg: 28 80% 80%;
-    --chat-user-foreground: 0 0% 0%;
+    /* Chat-specific */
+    --chat-user-bg: 28 90% 96%;
+    --chat-user-foreground: 240 10% 3.9%;
     --chat-ai-bg: 0 0% 100%;
-    --chat-ai-foreground: 20 25% 10%;
-    --chat-ai-border: 30 15% 90%;
+    --chat-ai-foreground: 240 10% 3.9%;
+    --chat-ai-border: 240 5.9% 90%;
 
-    /* Source card tokens */
-    --source-bg: 30 15% 98%;
-    --source-border: 25 70% 88%;
-    --source-accent: 28 70% 68%;
-
-    /* Sidebar */
-    --sidebar-background: 30 10% 97%;
-    --sidebar-foreground: 20 25% 15%;
-    --sidebar-primary: 28 80% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 80% 90%;
-    --sidebar-accent-foreground: 25 85% 35%;
-    --sidebar-border: 30 15% 92%;
-    --sidebar-ring: 28 80% 58%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 20 20% 7%;
-    --foreground: 30 20% 95%;
+    /* Background layers - Premium Dark Mode (Deep Black) */
+    --background: 0 0% 4%; /* #0a0a0a */
+    --foreground: 0 0% 98%;
 
-    --card: 20 20% 10%;
-    --card-foreground: 30 20% 95%;
+    /* Cards and surfaces - Subtle elevation */
+    --card: 0 0% 7%; /* #121212 */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 20 20% 10%;
-    --popover-foreground: 30 20% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 25 80% 60%;
+    /* Primary: Vibrant Orange */
+    --primary: 28 90% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 15% 15%;
-    --secondary-foreground: 30 20% 90%;
+    /* Secondary: Deep Gray */
+    --secondary: 0 0% 12%; 
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 20 15% 18%;
-    --muted-foreground: 30 15% 55%;
+    /* Muted surfaces */
+    --muted: 0 0% 12%;
+    --muted-foreground: 240 5% 65%; /* Soft gray text */
 
-    --accent: 25 45% 18%;
-    --accent-foreground: 25 80% 70%;
+    /* Accent */
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
+    /* Semantic colors */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
 
-    --success: 152 60% 40%;
-    --success-foreground: 0 0% 100%;
+    /* UI elements */
+    --border: 0 0% 12%; /* Subtle borders */
+    --input: 0 0% 12%;
+    --ring: 28 90% 60%;
 
-    --warning: 38 80% 45%;
-    --warning-foreground: 0 0% 100%;
+    /* Chat-specific */
+    --chat-user-bg: 28 90% 60%; /* Primary orange for user */
+    --chat-user-foreground: 0 0% 100%;
+    --chat-ai-bg: 0 0% 7%;
+    --chat-ai-foreground: 0 0% 98%;
+    --chat-ai-border: 0 0% 12%;
 
-    --border: 20 15% 20%;
-    --input: 20 15% 20%;
-    --ring: 25 80% 60%;
-
-    --chat-user-bg: 25 80% 60%;
-    --chat-user-foreground: 0 0% 0%;
-    --chat-ai-bg: 20 20% 12%;
-    --chat-ai-foreground: 30 20% 95%;
-    --chat-ai-border: 20 15% 20%;
-
-    --source-bg: 20 20% 10%;
-    --source-border: 25 35% 30%;
-    --source-accent: 25 80% 60%;
-
-    --sidebar-background: 20 20% 6%;
-    --sidebar-foreground: 30 20% 90%;
-    --sidebar-primary: 25 80% 60%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 45% 15%;
-    --sidebar-accent-foreground: 25 80% 70%;
-    --sidebar-border: 20 15% 15%;
-    --sidebar-ring: 25 80% 60%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -134,8 +121,17 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Typography enhancements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold;
+  }
+  
+  code, pre, kbd, samp {
+    @apply font-mono; /* JetBrains Mono */
   }
 
   /* Custom scrollbar */
@@ -394,4 +390,92 @@
       background-position: 250% 0, 250% 0;
     }
   }
+  /* Upload Success Animation */
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes checkmark-draw {
+    0% {
+      stroke-dashoffset: 50;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes scale-in {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  .animate-checkmark {
+    animation: checkmark-draw 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.4s ease-out forwards;
+  }
 }
+
+  /* Image Preview Modal Animations */
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes zoom-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+  }
+
+  .animate-zoom-in {
+    animation: zoom-in 0.3s ease-out forwards;
+  }
