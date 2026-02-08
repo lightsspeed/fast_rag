@@ -24,6 +24,7 @@ const Index = () => {
     deleteConversation,
     renameConversation,
     togglePinConversation,
+    stopGeneration,
   } = useChat();
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -82,6 +83,7 @@ const Index = () => {
           onFeedback={updateMessageFeedback}
           onEditMessage={editMessage}
           onViewSources={handleViewSources}
+          onStopGeneration={stopGeneration}
         />
       </div>
 

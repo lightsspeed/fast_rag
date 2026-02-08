@@ -42,6 +42,14 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const messages = activeConversation?.messages || [];
 
@@ -227,6 +235,10 @@ export function useChat() {
         },
         // onError
         (error) => {
+          if (error.message === 'Aborted') {
+            console.log('Query aborted by user');
+            return;
+          }
           console.error('WebSocket error:', error);
 
           // Update message with error
@@ -250,7 +262,8 @@ export function useChat() {
 
           setIsLoading(false);
           abortControllerRef.current = null;
-        }
+        },
+        abortControllerRef.current?.signal
       );
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -409,6 +422,7 @@ export function useChat() {
     activeConversationId,
     isLoading,
     sendMessage,
+    stopGeneration,
     createNewConversation,
     setActiveConversationId,
     searchMessages,

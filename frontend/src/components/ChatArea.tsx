@@ -15,6 +15,7 @@ interface ChatAreaProps {
   onFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => void;
   onEditMessage?: (messageId: string, newContent: string, images?: string[]) => void;
   onViewSources?: (sources: any[]) => void;
+  onStopGeneration?: () => void;
 }
 
 export function ChatArea({
@@ -26,6 +27,7 @@ export function ChatArea({
   onFeedback,
   onEditMessage,
   onViewSources,
+  onStopGeneration,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
@@ -109,6 +111,7 @@ export function ChatArea({
         )}
         <ChatInput
           onSend={handleSend}
+          onCancel={onStopGeneration}
           isLoading={isLoading}
           disabled={false}
           value={inputValue}

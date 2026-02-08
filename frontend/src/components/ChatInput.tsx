@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { Send, ImagePlus, X, Sparkles, Loader2 } from 'lucide-react';
+import { Send, ImagePlus, X, Sparkles, Loader2, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { UploadSuccessAnimation } from './UploadSuccessAnimation';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
   onSend: (message: string, images?: string[]) => void;
+  onCancel?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
   value?: string;
@@ -16,7 +17,7 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export function ChatInput({ onSend, isLoading, disabled, value, onChange, placeholder }: ChatInputProps) {
+export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChange, placeholder }: ChatInputProps) {
   const [internalMessage, setInternalMessage] = useState(value || '');
   const [images, setImages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -371,20 +372,32 @@ export function ChatInput({ onSend, isLoading, disabled, value, onChange, placeh
               )}
             />
 
-            {/* Send Button */}
-            <Button
-              type="submit"
-              size="icon"
-              disabled={(!internalMessage.trim() && images.length === 0) || isLoading || disabled}
-              className={cn(
-                "h-10 w-10 shrink-0 rounded-xl transition-all duration-200",
-                (internalMessage.trim() || images.length > 0) && !isLoading
-                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
-                  : "bg-muted text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {/* Send / Stop Button */}
+            {isLoading ? (
+              <Button
+                type="button"
+                size="icon"
+                onClick={onCancel}
+                className="h-10 w-10 shrink-0 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25 transition-all duration-200"
+                title="Stop generation"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                disabled={(!internalMessage.trim() && images.length === 0) || isLoading || disabled}
+                className={cn(
+                  "h-10 w-10 shrink-0 rounded-xl transition-all duration-200",
+                  (internalMessage.trim() || images.length > 0) && !isLoading
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                    : "bg-muted text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           {/* Keyboard hint */}

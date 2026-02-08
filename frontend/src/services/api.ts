@@ -49,11 +49,21 @@ export const api = {
         onMetadata: (metadata: StreamMetadata) => void,
         onContent: (text: string) => void,
         onComplete: () => void,
-        onError: (error: Error) => void
+        onError: (error: Error) => void,
+        signal?: AbortSignal
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             const wsUrl = `${API_BASE_URL.replace('http', 'ws')}${API_V1_PREFIX}/ws/chat`;
             const socket = new WebSocket(wsUrl);
+
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                        socket.close();
+                    }
+                    reject(new Error('Aborted'));
+                });
+            }
 
             socket.onopen = () => {
                 socket.send(JSON.stringify({
