@@ -249,7 +249,8 @@ export function useChat() {
                           ...msg,
                           content: assistantContent
                             ? `${assistantContent}\n\n*Generation stopped by user.*`
-                            : "*Generation stopped by user.*"
+                            : "*Generation stopped by user.*",
+                          isStopped: true
                         }
                         : msg
                     ),

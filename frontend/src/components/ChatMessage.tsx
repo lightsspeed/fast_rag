@@ -225,8 +225,8 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
           </div>
         )}
 
-        {/* Action buttons - Hide when streaming */}
-        {!isStreaming && (
+        {/* Action buttons - Hide when streaming or stopped */}
+        {!isStreaming && !message.isStopped && (
           <div className={cn(
             "flex items-center gap-1 mt-1 px-1",
             isUser ? "flex-row-reverse" : "flex-row"

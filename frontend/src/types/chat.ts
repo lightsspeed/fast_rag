@@ -17,6 +17,7 @@ export interface ChatMessage {
   sources?: SourceCitation[];
   images?: string[];
   feedback?: 'up' | 'down';
+  isStopped?: boolean;
 }
 
 export interface ChatConversation {

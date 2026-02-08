@@ -61,6 +61,7 @@ export const api = {
                     if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
                         socket.close();
                     }
+                    onError(new Error('Aborted'));
                     reject(new Error('Aborted'));
                 });
             }
