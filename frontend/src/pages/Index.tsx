@@ -29,14 +29,19 @@ const Index = () => {
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingInput, setPendingInput] = useState('');
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [activeSources, setActiveSources] = useState<SourceCitation[]>([]);
 
-  const openSearch = () => setCommandPaletteOpen(true);
+  const openSearch = () => {
+    setCommandPaletteOpen(true);
+    setMobileMenuOpen(false);
+  };
 
   const handleSelectIssue = useCallback((query: string) => {
     setPendingInput(query);
+    setMobileMenuOpen(false);
   }, []);
 
   const handleClearPendingInput = useCallback(() => {
@@ -55,18 +60,27 @@ const Index = () => {
         theme={theme}
         onToggleTheme={toggleTheme}
         onSelectIssue={handleSelectIssue}
+        onToggleMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
       />
 
       {/* Main content */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 relative">
         {/* Sidebar */}
         <Sidebar
           conversations={conversations}
           activeConversationId={activeConversationId}
-          onSelectConversation={setActiveConversationId}
-          onNewConversation={createNewConversation}
+          onSelectConversation={(id) => {
+            setActiveConversationId(id);
+            setMobileMenuOpen(false);
+          }}
+          onNewConversation={() => {
+            createNewConversation();
+            setMobileMenuOpen(false);
+          }}
           onOpenSearch={openSearch}
           isCollapsed={sidebarCollapsed}
+          isMobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           onDeleteConversation={deleteConversation}
           onRenameConversation={renameConversation}

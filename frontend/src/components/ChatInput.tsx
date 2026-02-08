@@ -61,8 +61,10 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+      if (window.innerWidth > 768) { // Only submit on Enter for desktop
+        e.preventDefault();
+        handleSubmit(e);
+      }
     }
   };
 
@@ -97,7 +99,6 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
       return;
     }
 
-
     // Show upload animation
     setIsUploading(true);
 
@@ -123,7 +124,6 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
       });
     };
     reader.readAsDataURL(file);
-
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +172,6 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set dragging to false if we're leaving the form container
     if (e.currentTarget === formRef.current) {
       setIsDragging(false);
     }
@@ -194,7 +193,6 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
-    // Also remove analysis for this image
     setImageAnalysis((prev) => {
       const newAnalysis = { ...prev };
       delete newAnalysis[index];
@@ -238,10 +236,8 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
 
   return (
     <>
-      {/* Upload Success Animation */}
       <UploadSuccessAnimation isUploading={isUploading} />
 
-      {/* Image Preview Modal */}
       <ImagePreviewModal
         imageUrl={previewImage}
         onClose={() => setPreviewImage(null)}
@@ -254,7 +250,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "flex flex-col p-4 border-t border-border bg-gradient-to-t from-card to-transparent transition-all duration-200",
+            "flex flex-col p-3 md:p-4 border-t border-border bg-gradient-to-t from-card to-transparent transition-all duration-200",
             isDragging && "bg-primary/5 border-primary/50"
           )}
         >
@@ -262,17 +258,16 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
           {isDragging && (
             <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center z-10 pointer-events-none">
               <div className="text-center">
-                <ImagePlus className="w-12 h-12 text-primary mx-auto mb-2" />
-                <p className="text-sm font-medium text-primary">Drop images here</p>
+                <ImagePlus className="w-10 h-10 md:w-12 md:h-12 text-primary mx-auto mb-2" />
+                <p className="text-xs md:text-sm font-medium text-primary">Drop images here</p>
               </div>
             </div>
           )}
 
-          {/* Image Preview Section - Displays above text input */}
+          {/* Image Preview Section */}
           {images.length > 0 && (
-            <div className="flex flex-col gap-4 mb-4">
-              {/* Image Container */}
-              <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-4 mb-3 md:mb-4">
+              <div className="flex flex-wrap gap-2 md:gap-3">
                 {images.map((img, idx) => (
                   <div key={idx} className="flex flex-col gap-2">
                     <div className="relative group inline-block">
@@ -281,27 +276,26 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
                         alt={`Upload ${idx + 1}`}
                         onClick={() => setPreviewImage(img)}
                         className={cn(
-                          "w-32 h-32 object-cover rounded-xl border-2 border-border cursor-pointer hover:opacity-80 hover:border-primary/50 transition-all duration-200 shadow-lg",
+                          "w-24 h-24 md:w-32 md:h-32 object-cover rounded-xl border-2 border-border cursor-pointer hover:opacity-80 hover:border-primary/50 transition-all duration-200 shadow-lg",
                           imageAnalysis[idx] && "border-green-500/50"
                         )}
                       />
                       <button
                         type="button"
                         onClick={() => removeImage(idx)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:scale-110 z-10"
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-md hover:scale-110 z-10"
                         aria-label="Remove image"
                       >
                         <X className="w-4 h-4" />
                       </button>
 
-                      {/* Analyze Button */}
                       {!imageAnalysis[idx] && (
                         <button
                           type="button"
                           onClick={() => handleAnalyzeImage(img, idx)}
                           disabled={isAnalyzing}
                           className={cn(
-                            "absolute bottom-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm transition-all opacity-0 group-hover:opacity-100 hover:bg-primary hover:text-primary-foreground",
+                            "absolute bottom-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-primary hover:text-primary-foreground",
                             isAnalyzing && "opacity-100"
                           )}
                           title="Analyze with Claude"
@@ -315,13 +309,12 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
                       )}
                     </div>
 
-                    {/* Analysis Result Indicator */}
                     {imageAnalysis[idx] && (
-                      <div className="max-w-[128px]">
-                        <div className="text-[10px] uppercase font-bold text-green-600 mb-1 flex items-center gap-1">
+                      <div className="max-w-[100px] md:max-w-[128px]">
+                        <div className="text-[9px] md:text-[10px] uppercase font-bold text-green-600 mb-1 flex items-center gap-1">
                           <Sparkles className="w-3 h-3" /> Analyzed
                         </div>
-                        <div className="text-xs text-muted-foreground line-clamp-3 bg-muted/50 p-1.5 rounded border border-border/50">
+                        <div className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 md:line-clamp-3 bg-muted/50 p-1 md:p-1.5 rounded border border-border/50">
                           {imageAnalysis[idx]}
                         </div>
                       </div>
@@ -332,7 +325,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
             </div>
           )}
 
-          <div className="relative flex items-end gap-3 bg-background rounded-2xl border border-input p-2 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all duration-200">
+          <div className="relative flex items-end gap-2 md:gap-3 bg-background rounded-xl md:rounded-2xl border border-input p-1.5 md:p-2 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all duration-200 shadow-sm">
             {/* Image Upload Button */}
             <input
               ref={fileInputRef}
@@ -348,8 +341,8 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
-              title="Upload image (or paste/drag & drop)"
+              className="h-9 w-9 md:h-10 md:w-10 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg md:rounded-xl transition-colors"
+              title="Upload image"
             >
               <ImagePlus className="w-5 h-5" />
             </Button>
@@ -360,15 +353,15 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
               value={internalMessage}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder || "Ask anything about IT support..."}
+              placeholder={placeholder || (window.innerWidth < 768 ? "Ask away..." : "Ask anything about IT support...")}
               disabled={disabled || isLoading}
               rows={1}
               className={cn(
-                "flex-1 resize-none bg-transparent py-2.5 px-1",
-                "text-sm text-foreground placeholder:text-muted-foreground",
+                "flex-1 resize-none bg-transparent py-2 px-1 md:py-2.5",
+                "text-[15px] md:text-sm text-foreground placeholder:text-muted-foreground",
                 "focus:outline-none",
                 "disabled:cursor-not-allowed disabled:opacity-50",
-                "min-h-[40px] max-h-[200px]"
+                "min-h-[36px] max-h-[200px]"
               )}
             />
 
@@ -378,7 +371,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
                 type="button"
                 size="icon"
                 onClick={onCancel}
-                className="h-10 w-10 shrink-0 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25 transition-all duration-200"
+                className="h-9 w-9 md:h-10 md:w-10 shrink-0 rounded-lg md:rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25 transition-all duration-200"
                 title="Stop generation"
               >
                 <Square className="h-4 w-4 fill-current" />
@@ -389,7 +382,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
                 size="icon"
                 disabled={(!internalMessage.trim() && images.length === 0) || isLoading || disabled}
                 className={cn(
-                  "h-10 w-10 shrink-0 rounded-xl transition-all duration-200",
+                  "h-9 w-9 md:h-10 md:w-10 shrink-0 rounded-lg md:rounded-xl transition-all duration-200",
                   (internalMessage.trim() || images.length > 0) && !isLoading
                     ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
                     : "bg-muted text-muted-foreground hover:bg-muted"
@@ -400,9 +393,8 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled, value, onChan
             )}
           </div>
 
-          {/* Keyboard hint */}
-          <p className="text-xs text-muted-foreground text-center mt-3">
-            IntelliQuery can make mistakes. Consider checking important information.
+          <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2 md:mt-3 px-4">
+            IntelliQuery can make mistakes. {window.innerWidth >= 768 && "Consider checking important information."}
           </p>
         </div>
       </form>

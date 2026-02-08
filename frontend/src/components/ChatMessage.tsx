@@ -109,7 +109,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
       <div
         className={cn(
           "flex flex-col",
-          isUser ? "items-end max-w-[70%]" : "items-start w-full max-w-full"
+          isUser ? "items-end max-w-[85%] md:max-w-[70%]" : "items-start w-full max-w-full"
         )}
       >
         {isStreaming ? (
@@ -124,7 +124,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
                 ? "px-5 py-3 flex flex-col gap-3 min-h-[3rem]"
                 : message.isStopped
                   ? "px-6 py-4 max-w-fit"
-                  : "p-8 md:p-12"
+                  : "p-5 md:p-12" // Reduced padding on mobile
             )}
           >
             {/* Display images for user messages - ABOVE the text */}
@@ -152,16 +152,16 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
                 remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({ ...props }) => (
-                    <h1 className="text-3xl font-bold mb-6 mt-2 tracking-tight text-foreground" {...props} />
+                    <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 mt-2 tracking-tight text-foreground" {...props} />
                   ),
                   h2: ({ ...props }) => (
-                    <h2 className="text-2xl font-bold mb-4 mt-8 tracking-tight text-foreground/90" {...props} />
+                    <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 mt-6 md:mt-8 tracking-tight text-foreground/90" {...props} />
                   ),
                   h3: ({ ...props }) => (
-                    <h3 className="text-lg font-semibold mb-3 mt-6 text-foreground/90" {...props} />
+                    <h3 className="text-base md:text-lg font-semibold mb-2 md:mb-3 mt-4 md:mt-6 text-foreground/90" {...props} />
                   ),
                   p: ({ ...props }) => (
-                    <p className={cn("text-base leading-7 text-foreground/80 font-normal", isUser ? "mb-0" : "mb-4")} {...props} />
+                    <p className={cn("text-[15px] md:text-base leading-relaxed md:leading-7 text-foreground/80 font-normal", isUser ? "mb-0" : "mb-4")} {...props} />
                   ),
                   a: ({ ...props }) => (
                     <a
@@ -172,10 +172,10 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
                     />
                   ),
                   ul: ({ ...props }) => (
-                    <ul className="list-disc pl-6 mb-4 space-y-2 text-[15px] text-foreground/80" {...props} />
+                    <ul className="list-disc pl-5 md:pl-6 mb-4 space-y-2 text-[14px] md:text-[15px] text-foreground/80" {...props} />
                   ),
                   ol: ({ ...props }) => (
-                    <ol className="list-decimal pl-6 mb-4 space-y-2 text-[15px] text-foreground/80" {...props} />
+                    <ol className="list-decimal pl-5 md:pl-6 mb-4 space-y-2 text-[14px] md:text-[15px] text-foreground/80" {...props} />
                   ),
                   li: ({ ...props }) => (
                     <li className="pl-1" {...props} />
@@ -192,7 +192,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
                         <code
                           {...rest}
                           className={cn(
-                            "font-mono text-[14px] font-medium px-1.5 py-0.5 rounded",
+                            "font-mono text-[13px] md:text-[14px] font-medium px-1.5 py-0.5 rounded",
                             isUser
                               ? "text-chat-user-foreground bg-black/5"
                               : "text-foreground bg-muted/50 dark:bg-muted/20"
@@ -232,14 +232,14 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
         {/* Action buttons - Hide when streaming or stopped */}
         {!isStreaming && !message.isStopped && (
           <div className={cn(
-            "flex items-center gap-1 mt-1 px-1",
+            "flex items-center gap-1 mt-1 px-1 w-full",
             isUser ? "flex-row-reverse" : "flex-row"
           )}>
             {/* Copy button - for both */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 md:h-6 md:w-6 text-muted-foreground hover:text-foreground"
               onClick={handleCopy}
             >
               {copied ? (
@@ -254,7 +254,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 md:h-6 md:w-6 text-muted-foreground hover:text-foreground"
                 onClick={() => onEdit(message)}
               >
                 <Pencil className="h-3 w-3" />
@@ -268,7 +268,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-6 w-6",
+                    "h-8 w-8 md:h-6 md:w-6",
                     message.feedback === 'up'
                       ? "text-green-500 hover:text-green-600"
                       : "text-muted-foreground hover:text-foreground"
@@ -281,7 +281,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-6 w-6",
+                    "h-8 w-8 md:h-6 md:w-6",
                     message.feedback === 'down'
                       ? "text-red-500 hover:text-red-600"
                       : "text-muted-foreground hover:text-foreground"
@@ -298,11 +298,12 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-auto h-7 gap-1.5 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:border-primary/40 bg-background/50 backdrop-blur-sm"
+                className="ml-auto h-8 md:h-7 px-2 md:px-3 gap-1.5 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:border-primary/40 bg-background/50 backdrop-blur-sm"
                 onClick={() => onViewSources?.(message.sources!)}
               >
                 <Library className="h-3.5 w-3.5 text-primary" />
-                Sources
+                <span className="hidden sm:inline">Sources</span>
+                <span className="sm:hidden">{message.sources.length}</span>
               </Button>
             )}
           </div>

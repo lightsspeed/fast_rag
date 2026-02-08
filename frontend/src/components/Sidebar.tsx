@@ -37,7 +37,9 @@ interface SidebarProps {
   onNewConversation: () => void;
   onOpenSearch: () => void;
   isCollapsed: boolean;
+  isMobileOpen: boolean;
   onToggle: () => void;
+  onMobileClose: () => void;
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
   onTogglePinConversation: (id: string) => void;
@@ -50,7 +52,9 @@ export function Sidebar({
   onNewConversation,
   onOpenSearch,
   isCollapsed,
+  isMobileOpen,
   onToggle,
+  onMobileClose,
   onDeleteConversation,
   onRenameConversation,
   onTogglePinConversation,
@@ -91,9 +95,20 @@ export function Sidebar({
 
   return (
     <>
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
       <aside className={cn(
-        "border-r border-border bg-sidebar flex flex-col h-full transition-all duration-300 ease-out",
-        isCollapsed ? "w-16" : "w-72"
+        "bg-sidebar flex flex-col h-full transition-all duration-300 ease-out z-50",
+        "fixed inset-y-0 left-0 md:relative md:flex shrink-0",
+        isCollapsed ? "w-16" : "w-72",
+        // Mobile visibility
+        isMobileOpen ? "translate-x-0 border-r border-border" : "-translate-x-full md:translate-x-0"
       )}>
         {/* New Chat Button */}
         <div className="p-3 space-y-2">
@@ -121,7 +136,6 @@ export function Sidebar({
             {!isCollapsed && (
               <>
                 <span className="flex-1 text-left">Search</span>
-                {/* <kbd className="text-xs bg-sidebar-accent px-1.5 py-0.5 rounded text-muted-foreground"></kbd> */}
               </>
             )}
           </Button>
@@ -256,8 +270,8 @@ export function Sidebar({
             "flex items-center",
             isCollapsed ? "flex-col gap-2" : "gap-3 px-2"
           )}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20 animate-glow">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden bg-background border border-border flex items-center justify-center shadow-lg shadow-primary/20 animate-glow">
+              <img src="/downloadjio.png" alt="Logo" className="w-full h-full object-contain p-1.5" />
             </div>
             {!isCollapsed && (
               <div className="flex-1">
@@ -269,7 +283,7 @@ export function Sidebar({
               variant="ghost"
               size="icon"
               onClick={onToggle}
-              className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+              className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hidden md:flex"
             >
               {isCollapsed ? (
                 <ChevronRight className="h-4 w-4" />
