@@ -88,32 +88,28 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
     <div
       className={cn(
         "flex gap-3 animate-message-in",
-        message.isStopped ? "justify-center" : (isUser ? "flex-row-reverse" : "flex-row")
+        isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
       {/* Avatar */}
-      {!message.isStopped && (
-        <div
-          className={cn(
-            "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-            isUser ? "bg-primary" : "bg-accent"
-          )}
-        >
-          {isUser ? (
-            <User className="w-4 h-4 text-primary-foreground" />
-          ) : (
-            <Sparkles className="w-4 h-4 text-accent-foreground" />
-          )}
-        </div>
-      )}
+      <div
+        className={cn(
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+          isUser ? "bg-primary" : "bg-accent"
+        )}
+      >
+        {isUser ? (
+          <User className="w-4 h-4 text-primary-foreground" />
+        ) : (
+          <Sparkles className="w-4 h-4 text-accent-foreground" />
+        )}
+      </div>
 
       {/* Content or Loading Indicator */}
       <div
         className={cn(
           "flex flex-col",
-          message.isStopped
-            ? "items-center"
-            : (isUser ? "items-end max-w-[70%]" : "items-start w-full max-w-full")
+          isUser ? "items-end max-w-[70%]" : "items-start w-full max-w-full"
         )}
       >
         {isStreaming ? (
@@ -127,7 +123,7 @@ export function ChatMessage({ message, isStreaming, onEdit, onFeedback, onViewSo
               isUser
                 ? "px-5 py-3 flex flex-col gap-3 min-h-[3rem]"
                 : message.isStopped
-                  ? "px-6 py-4 max-w-fit text-center"
+                  ? "px-6 py-4 max-w-fit"
                   : "p-8 md:p-12"
             )}
           >
