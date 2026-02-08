@@ -40,7 +40,7 @@ export function EmptyState({ onSampleQuestion }: EmptyStateProps) {
             <Globe className="w-4 h-4 text-primary" />
           </div>
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent whitespace-nowrap leading-normal pb-2">
           Welcome to IntelliQuery
         </h1>
