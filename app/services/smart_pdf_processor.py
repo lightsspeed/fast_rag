@@ -121,7 +121,8 @@ class SmartPDFProcessor:
     
     def __init__(self):
         self.client = Groq(api_key=settings.GROQ_API_KEY)
-        self.vision_model = "llama-3.2-90b-vision-preview" # updated based on availability
+        self.vision_model = settings.GROQ_VISION_MODEL
+        logger.info(f"SmartPDFProcessor initialized with vision_model: {self.vision_model}")
 
     async def process_pdf(self, pdf_path: str) -> str:
         """Process entire PDF and return combined text content."""
@@ -202,6 +203,9 @@ class SmartPDFProcessor:
 
     async def _call_vision_model(self, image_bytes: bytes) -> str:
         """Call Groq Vision API."""
+        if not self.vision_model:
+            return "[Vision Model Not Configured - Content Skipped]"
+
         import base64
         base64_image = base64.b64encode(image_bytes).decode('utf-8')
         

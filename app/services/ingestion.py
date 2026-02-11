@@ -54,7 +54,19 @@ class IngestionService:
             except Exception as e:
                 logger.error(f"Failed to initiate processing for {filename}: {e}")
 
+    def delete_document_vectors(self, file_hash: str):
+        """Removes all vectors associated with a file hash from ChromaDB."""
+        try:
+            collection = get_collection()
+            collection.delete(where={"file_hash": file_hash})
+            logger.info(f"Purged vectors for file_hash: {file_hash}")
+        except Exception as e:
+            logger.error(f"Failed to purge vectors for {file_hash}: {e}")
+
     def process_document(self, file_path: str, filename: str, file_hash: str, db: Session):
+        # 1. Atomic Cleanup: Ensure no ghost vectors exist from previous runs
+        self.delete_document_vectors(file_hash)
+        
         start_time = time.time()
         logger.info(f"START PROCESSING: {filename}")
         content = ""
@@ -115,31 +127,59 @@ class IngestionService:
             texts = [chunk['text'] for chunk in chunks]
             embeddings = embedder.embed_batch(texts) 
 
-            # 4. Store in Chroma
-            logger.info(f"Storing {chunk_count} vectors in Database...")
+            # 4. Store in Chroma and SQLite
+            logger.info(f"Storing {chunk_count} vectors and metadata in Databases...")
             collection = get_collection()
-            ids = [str(uuid.uuid4()) for _ in chunks]
-            metadatas = [chunk['metadata'] for chunk in chunks]
             
-            collection.add(
-                documents=texts,
-                embeddings=embeddings,
-                metadatas=metadatas,
-                ids=ids
-            )
+            doc = db.query(models.Document).filter(models.Document.file_hash == file_hash).first()
+            if not doc:
+                logger.error(f"Document record not found for {filename}")
+                self._mark_failed(db, file_hash)
+                return
+
+            for i, chunk in enumerate(chunks):
+                vector_id = str(uuid.uuid4())
+                
+                # Prepare metadata for Chroma (must be flat types)
+                chroma_metadata = {}
+                for key, value in chunk['metadata'].items():
+                    if value is None:
+                        continue # Skip None values or convert to empty string if preferred
+                    if isinstance(value, (str, int, float, bool)):
+                         chroma_metadata[key] = value
+                    else:
+                        # Fallback for lists, dicts, etc.
+                        chroma_metadata[key] = str(value)
+
+                # Store in Chroma
+                collection.add(
+                    documents=[chunk['text']],
+                    embeddings=[embeddings[i]],
+                    metadatas=[chroma_metadata],
+                    ids=[vector_id]
+                )
+                
+                # Store in SQLite
+                db_chunk = models.Chunk(
+                    document_id=doc.id,
+                    vector_id=vector_id,
+                    content=chunk['text'],
+                    summary=chunk['metadata'].get('summary', ''),
+                    keywords=chunk['metadata'].get('keywords', []),
+                    questions=chunk['metadata'].get('questions', [])
+                )
+                db.add(db_chunk)
 
             # 5. Update DB status
-            doc = db.query(models.Document).filter(models.Document.file_hash == file_hash).first()
-            if doc:
-                doc.status = "completed"
-                doc.chunk_count = len(chunks)
-                db.commit()
+            doc.status = "completed"
+            doc.chunk_count = len(chunks)
+            db.commit()
             
             elapsed_time = time.time() - start_time
             logger.info(
                 f"\n--- Processing Summary ---\n"
                 f"File: {filename}\n"
-                f"Status: Processed & Stored inside SQLite (ragdb.db)\n"
+                f"Status: Processed & Stored inside SQLite (ragdb.db) & Chroma (Vector Store)\n"
                 f"Chunks Generated: {chunk_count}\n"
                 f"Time: ~{elapsed_time:.2f} seconds\n"
                 f"--------------------------"

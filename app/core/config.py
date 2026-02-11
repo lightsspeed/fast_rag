@@ -33,8 +33,10 @@ class Settings(BaseSettings):
 
     # LLM
     GROQ_API_KEY: str
-    GROQ_MODEL: str = "llama-3.1-8b-instant"
-    GROQ_VISION_MODEL: Optional[str] = "llama-3.2-90b-vision-preview"
+    GROQ_MODEL: str = "llama-3.1-8b-instant" # Default fallback
+    GROQ_PLANNING_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_FAST_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_VISION_MODEL: Optional[str] = None
     
 
     # GOOGLE (Gemini Vision)

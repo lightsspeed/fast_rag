@@ -17,6 +17,7 @@ from app.services.cache import redis_cache
 from app.db.chroma import get_collection
 from app.services.ingestion import ingestion_service
 from app.services.vision import vision_service
+from app.services.reasoning_engine import reasoning_engine
 from app.core.limiter import limiter
 from datetime import datetime
 import logging
@@ -143,35 +144,49 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
             if not query:
                 continue
 
-            # --- Standard Text-Only Flow (Groq/Llama) ---
+            # --- Production Reasoning Engine Flow ---
             # 1. Augment Query with previous visual context if it exists
             retrieval_query = query
             if last_visual_context:
                 retrieval_query = f"{query} (previously identified: {last_visual_context})"
                 logger.info(f"Augmenting text-only query with visual memory: {retrieval_query}")
 
-            # 2. Retrieve
-            chunks = await retriever.retrieve(retrieval_query)
-            
-            # Send Citations
-            sources = []
-            for chunk in chunks:
-                metadata = chunk.get('metadata', {})
-                source_name = metadata.get('source', metadata.get('filename', 'Unknown'))
-                sources.append({
-                    "id": chunk['id'],
-                    "documentName": source_name,
-                    "excerpt": chunk['text'][:300],
-                    "confidence": chunk.get('score', 0.0),
-                    "pageNumber": metadata.get('page'),
-                    "title": metadata.get('title'),
-                    "isWeb": metadata.get('is_web', False)
-                })
-            await websocket.send_json({"type": "sources", "sources": sources})
-
-            # 3. Generate (Stream)
-            async for token in generator.generate_stream(query, chunks):
-                await websocket.send_json({"type": "token", "content": token})
+            async for update in reasoning_engine.process_query_stream(retrieval_query):
+                update_type = update.get("type")
+                content = update.get("content")
+                
+                if update_type == "security":
+                    # Optionally send security status or just log
+                    if not update["assessment"]["is_safe"]:
+                         await websocket.send_json({"type": "error", "message": f"Security Block: {update['assessment']['reasoning']}"})
+                
+                elif update_type == "status":
+                    await websocket.send_json({"type": "status", "content": content})
+                
+                elif update_type == "plan":
+                    await websocket.send_json({"type": "plan", "plan": content})
+                
+                elif update_type == "step_result":
+                    # If it was a retrieval step, send sources
+                    if content.get("tool") == "hybrid_retriever" and content.get("output"):
+                        sources = []
+                        for chunk in content["output"]:
+                            metadata = chunk.get('metadata', {})
+                            source_name = metadata.get('source', metadata.get('filename', 'Unknown'))
+                            sources.append({
+                                "id": chunk['id'],
+                                "documentName": source_name,
+                                "excerpt": chunk['text'][:300],
+                                "confidence": chunk.get('score', 0.0),
+                                "isWeb": metadata.get('is_web', False)
+                            })
+                        await websocket.send_json({"type": "sources", "sources": sources})
+                
+                elif update_type == "token":
+                    await websocket.send_json({"type": "token", "content": content})
+                
+                elif update_type == "error":
+                    await websocket.send_json({"type": "error", "message": content})
             
             await websocket.send_json({"type": "complete"})
             
