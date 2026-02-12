@@ -49,34 +49,75 @@ async def upload_document(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
+    from app.api.security import FileValidator, FileDeduplicator
+    
     results = []
     for file in files:
-        # Save temp
-        temp_dir = "temp_uploads"
-        os.makedirs(temp_dir, exist_ok=True)
-        file_path = os.path.join(temp_dir, file.filename)
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        try:
+            # 1. Security validation
+            safe_filename, file_hash = await FileValidator.validate_upload(file)
             
-        # Hash
-        # ... logic to hash file content ...
-        file_hash = str(uuid.uuid4()) # Placeholder hash
+            # 2. Check for duplicates
+            duplicate = await FileDeduplicator.check_duplicate(file_hash, db)
+            if duplicate:
+                logger.info(f"Duplicate file detected: {safe_filename} (hash: {file_hash})")
+                results.append({
+                    **duplicate,
+                    "message": "File already exists, using existing version"
+                })
+                continue
+            
+            # 3. Save to temp directory
+            temp_dir = "temp_uploads"
+            os.makedirs(temp_dir, exist_ok=True)
+            file_path = os.path.join(temp_dir, safe_filename)
+            
+            # Reset file pointer after validation
+            await file.seek(0)
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
 
-        # DB Record
-        db_doc = models.Document(
-            filename=file.filename,
-            file_hash=file_hash,
-            status="processing"
-        )
-        db.add(db_doc)
-        db.commit()
-        db.refresh(db_doc)
+            # 4. Create DB record
+            db_doc = models.Document(
+                filename=safe_filename,
+                file_hash=file_hash,
+                status="processing"
+            )
+            db.add(db_doc)
+            db.commit()
+            db.refresh(db_doc)
 
-        # Background Process
-        background_tasks.add_task(ingestion_service.process_document, file_path, file.filename, file_hash, db)
-        
-        results.append({"filename": file.filename, "status": "processing", "id": db_doc.id})
+            # 5. Background processing
+            background_tasks.add_task(
+                ingestion_service.process_document, 
+                file_path, 
+                safe_filename, 
+                file_hash, 
+                db
+            )
+            
+            logger.info(f"Accepted upload: {safe_filename} (ID: {db_doc.id}, hash: {file_hash[:16]}...)")
+            results.append({
+                "filename": safe_filename, 
+                "status": "processing", 
+                "id": db_doc.id,
+                "file_hash": file_hash
+            })
+            
+        except HTTPException as e:
+            logger.warning(f"Upload rejected: {file.filename} - {e.detail}")
+            results.append({
+                "filename": file.filename,
+                "status": "rejected",
+                "error": e.detail
+            })
+        except Exception as e:
+            logger.error(f"Upload error for {file.filename}: {str(e)}")
+            results.append({
+                "filename": file.filename,
+                "status": "error",
+                "error": str(e)
+            })
     
     return {"uploaded": results}
 
@@ -168,8 +209,11 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
                 
                 elif update_type == "step_result":
                     # If it was a retrieval step, send sources
+                    # If it was a retrieval step, send sources
                     if content.get("tool") == "hybrid_retriever" and content.get("output"):
                         sources = []
+                        unique_images = {}
+                        
                         for chunk in content["output"]:
                             metadata = chunk.get('metadata', {})
                             source_name = metadata.get('source', metadata.get('filename', 'Unknown'))
@@ -180,7 +224,23 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
                                 "confidence": chunk.get('score', 0.0),
                                 "isWeb": metadata.get('is_web', False)
                             })
+                            
+                            # Extract Images (Step 5.7)
+                            if chunk.get('images'):
+                                for img in chunk['images']:
+                                    if img['image_id'] not in unique_images:
+                                         unique_images[img['image_id']] = {
+                                            "file": img['image_file'],
+                                            "caption": img['context'].get('caption'),
+                                            "page": img['page_number'],
+                                            "ocr_text": img['ocr_result'].get('text'),
+                                            "display_url": f"/api/images/{img['image_file']}" 
+                                         }
+
                         await websocket.send_json({"type": "sources", "sources": sources})
+                        
+                        if unique_images:
+                             await websocket.send_json({"type": "images", "images": list(unique_images.values())})
                 
                 elif update_type == "token":
                     await websocket.send_json({"type": "token", "content": content})

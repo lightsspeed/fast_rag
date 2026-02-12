@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON, TIMESTAMP, text, func, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, JSON, TIMESTAMP, text, func, ForeignKey, Text, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -31,6 +31,41 @@ class Chunk(Base):
     questions = Column(JSON, default=[])
     
     document = relationship("Document", back_populates="chunks")
+    images = relationship("ImageMetadata", back_populates="chunk", cascade="all, delete-orphan")
+
+class ImageMetadata(Base):
+    __tablename__ = "image_metadata"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chunk_id = Column(Integer, ForeignKey("chunks.id"), nullable=True)
+    document_id = Column(Integer, nullable=True)
+    page_number = Column(Integer, nullable=False)
+    image_file = Column(String(500), nullable=False)
+    image_id = Column(String(50), unique=True, index=True)
+    
+    # OCR & Quality Metrics
+    ocr_result = Column(JSON, default={})
+    confidence = Column(Float, default=0.0)
+    ocr_method = Column(String(50))
+    resolution = Column(String(50))
+    
+    # Content & Context
+    searchable_content = Column(Text)
+    screenshot_type = Column(String(100))
+    application = Column(String(100))
+    error_codes = Column(JSON, default=[])
+    caption = Column(Text, nullable=True)
+    context_summary = Column(Text, nullable=True)
+    
+    # PII Detection Fields
+    has_pii = Column(Integer, default=0)  # 0=no, 1=yes
+    pii_types = Column(JSON, default=[])  # ["EMAIL", "PHONE"]
+    pii_count = Column(Integer, default=0)
+    needs_review = Column(Integer, default=0)  # 0=no, 1=yes
+    redacted_content = Column(Text, nullable=True)  # Redacted OCR text for logs
+    surrounding_text = Column(Text)
+    
+    chunk = relationship("Chunk", back_populates="images")
 
 class QueryLog(Base):
     __tablename__ = "query_logs"
